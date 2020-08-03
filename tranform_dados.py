@@ -1,27 +1,39 @@
 
+#Devanir Ramos Junior
+#email: junior472399@gmai.com
+#cel: 12 99258 9411
+
+#pip install pdfplumber
 import pdfplumber
+#pip install pandas
 import pandas
 import dic_acentos
 import zipfile
 import os
+import webscraping
 
-#fiz esse "programinha" para testes, mas pode rodar sem ele também
+arquivo = "Padrao_TISS_Componente_Organizacional_202006.pdf"
+#o programa baixa todas as tabelas de 2 colunas do pdf do TISS (o mesmo do webscraping)
+print("Iniciado\n")
+print("O programa irá extrair todas as tabelas de 2 colunas do arquivo pdf")
+print("\"Padrao_TISS_Componente_Organizacional_XXXXXX\"")
+print("As tabelas ficarão armazenadas no arquivo zip.")
+print("\nDeseja baixar o arquivo? (caso não tenha)")
+while True:
+    print("1 - Sim, quero baixar;")
+    baixar = input("2 - Não, já tenho.\n")
+    if baixar in "12":
+        if baixar == "1":
+            print("Ok, o arquivo será baixado.")
+            webscraping.webscraping()
+            break
+        else:
+            print("Ok, não será baixado.")
+            break
+    else:
+        print("Por favor, digite \"1\" ou \"2\".\n")
 
-#talvez n exista esse programinha
-'''
-
-print("Iniciado\n\n")
-print("Selecione a(s) página(s) que deseja extrair uma tabela.\n")
-print("Exemplo: 81, 82, 83, 84, 85, 86")
-num_paginas_raw = input("Página(s): ")
-print("\nSua tabela é a primeira da primeira página selecionada? Se for, digite 1,")
-print("se não for digite 2 caso seja a segunda, 3 para terceira, em diante.")
-num_tabela_raw = input("Tabela: ")
-
-num_paginas = num_paginas_raw.split(",")
-num_tabela = num_paginas_raw.strip()
-'''
-print("\nOk, aguarde um momento.\n")
+print("\nPor favor, aguarde um momento.\n")
 #no pandas não consegui manter caracteres especiais (com acento),
 #função criada para trocar o caracter especial com um normal
 def caracter_especial (palavra):
@@ -33,23 +45,20 @@ def caracter_especial (palavra):
 #pdfplumber trata os dados do pdf e pandas cria dataframes (tabelas)
 #consegue apenas pegar tabelas com 2 colunas
 nome = ""
-def tabela_pdf_para_csv(pagina, num_tabela = 1):
+def tabela_dataframe(pagina, num_tabela = 1):
     global nome
     #le o arquivo pdf
-    file = pdfplumber.open("Padrao_TISS_Atualizado.pdf")
+    file = pdfplumber.open(arquivo)
     #identifica tabelas na página e seleciona qual será extraida
     tabela_raw = file.pages[pagina - 1].find_tables()
     tabela_raw = tabela_raw[num_tabela - 1].extract()
     col1 = []
     col2 = []
-    print("Antes de printar tabela_raw")
-    print(tabela_raw)
     index = -1
     #algumas tabelas o pdfplumber reconhece com linhas fantasmas:
     #linhas com "" ou com None   -   (4 ou 6 linhas no total, de acordo com meus testes)
     #caso isso aconteça a tabela cai nesse tratamento especial
     if len(tabela_raw[0]) >= 4:
-        print("caiu na tabela 4")
         for item in tabela_raw:
             for palavra in item:
                 index += 1
@@ -63,7 +72,6 @@ def tabela_pdf_para_csv(pagina, num_tabela = 1):
                         else:
                             col1.append(caracter_especial(palavra))
                     else:
-                        #quando identifica 6 linhas isso mantem a igualdade
                         if palavra == "":
                             pass
                         else:
@@ -72,55 +80,60 @@ def tabela_pdf_para_csv(pagina, num_tabela = 1):
 
     #situação normal. 2 linhas
     elif len(tabela_raw[0]) == 2:
-        print("caiu na tabela 2")
         for item in tabela_raw:
-            print(item)
             for index in range(len(item)):
                 col1.append(caracter_especial(item[index]))
                 col2.append(caracter_especial(item[index + 1]))
                 break
 
+    #guarda a palavra/título da tabela
     if col1[0] == "":
         nome = col1[1]
     else:
         nome = col1[0]
-    print(col1)
-    print(col2)
-    print("Antes de fazer a tabela")
-    tabela = [col1, col2]
-    print("Antes de fazer o dataframe")
-    print(tabela)
     #cria uma tabela vazia e adiciona as duas colunas
     data_frame = pandas.DataFrame()
     data_frame["A"] = col1
     data_frame["B"] = col2
-    print(data_frame)
-    print("a")
-    #cria o arquivo csv
-    data_frame.to_csv("Testando.csv", index=False)
     return data_frame
 
-def criar_zip ():
-    arquivo_zip = zipfile.ZipFile("Teste_Intuitive_Care_Devanir_Ramos_Junior.zip", "w")
-    arquivo_zip.write((nome + ".csv"))
+def criar_zip (nome_arquivo):
+    arquivo_zip = zipfile.ZipFile("Teste_Intuitive_Care_Devanir_Ramos_Junior.zip", "a")
+    arquivo_zip.write(nome_arquivo + ".csv")
     arquivo_zip.close()
 
-
-
-
+#usado quando a tabela ocupa mais de uma página
 arquivos = []
+nomes = []
+merge = ""
+#numero da página com cada tabela
+#o valor vazio é pra indicar que não é uma tabela de várias paginas
+paginas = [56, "", 81, "", 81, 82, 83, 84, 85, 86, "", 87, "", 92, ""]
+#o número da cada tabela na página,
+#se tem duas tabelas na página e quero pegar a segunda o número será 2
+num_tabela = [1, 0, 1, 0,  2, 1, 1, 1, 1, 1, 0,  1, 0, 1, 0]
 
+for index in range(len(paginas)):
+    if paginas[index] == "":
+        pass
+    else:
+        resultado = tabela_dataframe(paginas[index], num_tabela[index])
+        print("Transformando tabela...")
+        if paginas[index + 1] != "":
+            arquivos.append(resultado)
+            nomes.append(nome)
+        else:
+            if len(arquivos) > 0:
+                merge = pandas.concat(arquivos)
+                merge.to_csv(nomes[0] + ".csv", index=False)
+                criar_zip(nomes[0])
+                os.remove(nomes[0] + ".csv")
+                arquivos = []
+                nomes = []
+            else:
+                resultado.to_csv(nome + ".csv", index=False)
+                criar_zip(nome)
+                os.remove(nome + ".csv")
 
-tabela_pdf_para_csv(81).to_csv((("/tabelas" + nome + ".csv")), index=False)
-criar_zip()
-for index in range(6):
-    arquivos.append(tabela_pdf_para_csv(81 + index))
-    print("-" * 50)
-merge = pandas.concat(arquivos)
-print(merge)
-merge.to_csv((nome + ".csv"), index=False)
-criar_zip()
-
-tabela_pdf_para_csv(87).to_csv((nome + ".csv"), index=False)
-
-criar_zip()
+#lembrando que no excel tem que colocar para delimitar a primeira coluna  por virgula
+print("\nPrograma finalizado.")

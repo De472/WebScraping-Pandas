@@ -1,6 +1,6 @@
-# vaga-estagio-2etapa
+# WebScraping-Pandas
 
-Programas realizados para a segunda etapa da seleção de um estágio
+Programas realizados em menos de 2 semanas para a seleção de um estágio.
 
 - Programa 1 (webscraping):
 Analisa a página predefinida e de acordo com o input do usuário é baixado um arquivo pdf ou cria um txt com o histórico

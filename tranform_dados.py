@@ -1,7 +1,6 @@
 
 #Devanir Ramos Junior
 #email: junior472399@gmai.com
-#cel: 12 99258 9411
 
 #pip install pdfplumber
 import pdfplumber
